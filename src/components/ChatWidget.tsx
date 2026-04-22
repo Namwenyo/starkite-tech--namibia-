@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { MessageCircle, X, Send, User, Headset, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, User, Headset, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { GoogleGenAI } from "@google/genai";
 
@@ -10,6 +10,7 @@ interface Message {
   role: "user" | "support";
   sender: string;
   timestamp: string;
+  rating?: 'up' | 'down';
 }
 
 const STARKITE_CONTEXT = `
@@ -107,6 +108,14 @@ const ChatWidget = () => {
     }
   };
 
+  const handleRateMessage = (messageId: string, rating: 'up' | 'down') => {
+    setMessages((prev) => 
+      prev.map((msg) => 
+        msg.id === messageId ? { ...msg, rating: msg.rating === rating ? undefined : rating } : msg
+      )
+    );
+  };
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -193,8 +202,28 @@ const ChatWidget = () => {
                         : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-bl-none shadow-sm"
                     }`}>
                       {msg.text}
-                      <div className={`text-[10px] mt-1 opacity-60 ${msg.role === "user" ? "text-right" : "text-left"}`}>
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <div className="flex items-center justify-between mt-2 gap-4">
+                        <div className={`text-[10px] opacity-60 ${msg.role === "user" ? "text-right" : "text-left"}`}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        {msg.role === "support" && (
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => handleRateMessage(msg.id, 'up')}
+                              className={`p-1 rounded-md transition-all hover:bg-slate-100 dark:hover:bg-slate-700 ${msg.rating === 'up' ? 'text-sky-500 scale-110' : 'text-slate-400'}`}
+                              aria-label="Helpful"
+                            >
+                              <ThumbsUp className="w-3 h-3" />
+                            </button>
+                            <button 
+                              onClick={() => handleRateMessage(msg.id, 'down')}
+                              className={`p-1 rounded-md transition-all hover:bg-slate-100 dark:hover:bg-slate-700 ${msg.rating === 'down' ? 'text-rose-500 scale-110' : 'text-slate-400'}`}
+                              aria-label="Not helpful"
+                            >
+                              <ThumbsDown className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
